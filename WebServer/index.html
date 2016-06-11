@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="scripts/config.js"></script>
+        <script type="text/javascript" src="scripts/turret.js"></script>
+    </head>
+    <body>
+        <h1>The motivator</h1>
+        <iframe width="1280" height="800" onload="this.src=cameraAddress();"></iframe>   
+        <br/>
+        <button onclick='sendCommand("fire");'>Fire</button>
+        <button onclick='sendCommand("left");'>Turn Left</button>
+        <button onclick='sendCommand("right");'>Turn Right</button>
+        <p id='response'>RESPONSE</p>
+    </body>
+</html>
