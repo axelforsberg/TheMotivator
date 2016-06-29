@@ -13,19 +13,29 @@ int D1 = 9;
 int D2 = 10;
 int D3 = 11;
 int D4 = 12;
-int C = 13;
 int S1 = 10;
 int S2 = 11;
+int R = 9;
+int F = 12;
+int C = 13;
+
 int receiver = 13; // Signal Pin of IR receiver to Arduino Digital Pin 11
 long Previous;
 int Speed;  
 /*-----( Declare objects )-----*/
 IRrecv irrecv(receiver);     // create instance of 'irrecv'
 decode_results results;      // create instance of 'decode_results'
- 
+
+//Fireing timing
+unsigned long revMillis = 0;
+unsigned long fireMillis = 0;
+const long revInterval = 1500;
+const long fireInterval = 1000;
+
+//Setup
 void setup()   /*----( SETUP: RUNS ONCE )----*/
 {
-  Speed = 3;
+  Speed = 10;
   servo1.attach(S1);
   servo2.attach(S2);
   pinMode(pinA, OUTPUT);     
@@ -35,15 +45,19 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
   pinMode(pinE, OUTPUT);     
   pinMode(pinF, OUTPUT);     
   pinMode(pinG, OUTPUT);
-  pinMode(D1, OUTPUT);
+  //pinMode(D1, OUTPUT);
   //pinMode(D2, OUTPUT);
   //pinMode(D3, OUTPUT);
-  pinMode(D4, OUTPUT);
+  //pinMode(D4, OUTPUT);
+  pinMode(R, OUTPUT);
+  pinMode(F, OUTPUT);
   pinMode(C, OUTPUT);     
   
   Serial.begin(9600);
   Serial.println("IR Receiver Button Decode"); 
   irrecv.enableIRIn(); // Start the receiver
+  Serial.println(revInterval); 
+  Serial.println(revMillis); 
     
  
 }/*--(end setup )---*/
@@ -51,6 +65,8 @@ void setup()   /*----( SETUP: RUNS ONCE )----*/
  
 void loop()   /*----( LOOP: RUNS CONSTANTLY )----*/
 {
+  //Check fireing timeing
+  checkFireing();
   if (irrecv.decode(&results)) // have we received an IR signal? 
   {
     translateIR(); 
@@ -59,6 +75,20 @@ void loop()   /*----( LOOP: RUNS CONSTANTLY )----*/
 }/* --(end main loop )-- */
  
 /*-----( Function )-----*/
+void checkFireing(){
+  unsigned long currentMillis = millis();
+  if (currentMillis - revMillis >= revInterval && revMillis != 0) {
+      Serial.println(revInterval);
+      fire();
+      fireMillis = millis();
+      revMillis = 0;
+  }else if (currentMillis - fireMillis >= fireInterval && fireMillis != 0) {
+      fireStop();
+      stopRev();
+      fireMillis = 0;
+  }
+}
+
 // takes action based on IR code received 
 // describing Remote IR codes
 void translateIR()   
@@ -75,15 +105,15 @@ void translateIR()
   switch(code) 
   { 
   case 16753245: Serial.println(" Power");off(); break;
-  case 16769565: Serial.println(" Menu");    break;
-  case 16720605: Serial.println(" Test");    break;
-  case 16761405: Serial.println(" Back");   break;
+  case 16769565: Serial.println(" Menu"); fireBurst(); break;
+  case 16720605: Serial.println(" Test"); fireStop(); break;
+  case 16761405: Serial.println(" Back"); startRev();  break;
   case 16769055: Serial.println(" Left"); turnServoLeft(); break;
   case 16712445: Serial.println(" Up"); turnServoUp(); break;
   case 16748655: Serial.println(" Right"); turnServoRight(); break;
   case 16750695: Serial.println(" Down"); turnServoDown(); break;
-  case 16754775: Serial.println(" Play"); break;
-  case 16756815: Serial.println(" C"); break;  
+  case 16754775: Serial.println(" Play"); fire(); break;
+  case 16756815: Serial.println(" C"); stopRev();break;  
   case 16738455: Serial.println(" 0");zero();setServo(90);    break;
   case 16724175: Serial.println(" 1");one();setServo(40);    break;
   case 16718055: Serial.println(" 2");two();setServo(52);    break;
@@ -105,15 +135,31 @@ void translateIR()
     Previous = results.value;
     Serial.println(Previous);  
   }
-  delay(50); // Do not get immediate repeat
+  delay(1); // Do not get immediate repeat
 } //END translateIR
+void fireBurst(){
+  startRev();
+  revMillis = millis(); 
+}
+void fire(){
+  digitalWrite(F, HIGH);  
+}
+void fireStop(){  
+  digitalWrite(F, LOW);
+}
+void startRev(){
+  digitalWrite(R, HIGH);
+}
+void stopRev(){
+  digitalWrite(R,LOW);
+}
 void setServo(int a){
   servo1.write(a);
   servo2.write(a);
 }
 void turnServoLeft(){
   int a = servo1.read();
-  int newA = a-10;
+  int newA = a-Speed;
   if(newA >=40){
     servo1.write(newA);
   }else{
@@ -122,7 +168,7 @@ void turnServoLeft(){
 }
 void turnServoRight(){
   int a = servo1.read();
-  int newA = a+10;
+  int newA = a+Speed;
   if(newA <= 140){
     servo1.write(newA);
   }else{
@@ -131,7 +177,7 @@ void turnServoRight(){
 }
 void turnServoUp(){
   int a = servo2.read();
-  int newA = a+10;
+  int newA = a+Speed;
   if(newA <= 140){
     servo2.write(newA);
   }else{
@@ -140,7 +186,7 @@ void turnServoUp(){
 }
 void turnServoDown(){
   int a = servo2.read();
-  int newA = a-10;
+  int newA = a-Speed;
   if(newA >= 40){
     servo2.write(newA);
   }else{
